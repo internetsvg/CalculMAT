@@ -1,0 +1,573 @@
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Calculadora Científica Retrô - 1980s Pocket Edition</title>
+    <!-- Tailwind CSS for utility classes -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tone.js for tactile click sound synthesis -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Google Fonts for Retro Monospace & Display Look -->
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        retro: ['"VT323"', 'monospace'],
+                        mono: ['"Share Tech Mono"', 'monospace'],
+                        lcd: ['"Orbitron"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #121417;
+            color: #d1d5db;
+            font-family: 'Share Tech Mono', monospace;
+            touch-action: manipulation;
+        }
+
+        /* Vintage Calculator Chassis Brush Metal / Matte Texture */
+        .calculator-body {
+            background: linear-gradient(145deg, #272a2f, #1a1c20);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.7), inset 0 2px 3px rgba(255,255,255,0.1), inset 0 -4px 6px rgba(0,0,0,0.5);
+            border: 3px solid #3a3f47;
+        }
+
+        /* CRT / LCD Phosphor Screen with optional scanlines */
+        .lcd-screen {
+            position: relative;
+            background: #111b15;
+            color: #4ade80;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.8), 0 0 5px rgba(74, 222, 128, 0.2);
+            border: 4px inset #0a110d;
+            overflow: hidden;
+        }
+
+        .lcd-screen.amber {
+            background: #1c1306;
+            color: #fbbf24;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.8), 0 0 5px rgba(251, 191, 36, 0.2);
+        }
+
+        .lcd-screen.scanlines::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            z-index: 10;
+            background-size: 100% 3px;
+            pointer-events: none;
+        }
+
+        /* 3D Tactile Vintage Keycaps */
+        .key-num {
+            background: linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%);
+            border-top: 2px solid #f3f4f6;
+            border-left: 2px solid #e5e7eb;
+            border-bottom: 4px solid #4b5563;
+            border-right: 4px solid #4b5563;
+            color: #111827;
+            font-weight: 700;
+            transition: all 0.05s ease;
+        }
+        .key-num:active {
+            border-bottom: 1px solid #4b5563;
+            border-right: 1px solid #4b5563;
+            transform: translateY(3px);
+            background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+        }
+
+        .key-func {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            border-top: 2px solid #9ca3af;
+            border-left: 2px solid #9ca3af;
+            border-bottom: 4px solid #1f2937;
+            border-right: 4px solid #1f2937;
+            color: #f3f4f6;
+            font-weight: 600;
+            transition: all 0.05s ease;
+        }
+        .key-func:active {
+            border-bottom: 1px solid #1f2937;
+            border-right: 1px solid #1f2937;
+            transform: translateY(3px);
+            background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+        }
+
+        .key-op {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            border-top: 2px solid #fcd34d;
+            border-left: 2px solid #fcd34d;
+            border-bottom: 4px solid #92400e;
+            border-right: 4px solid #92400e;
+            color: #ffffff;
+            font-weight: 700;
+            transition: all 0.05s ease;
+        }
+        .key-op:active {
+            border-bottom: 1px solid #92400e;
+            border-right: 1px solid #92400e;
+            transform: translateY(3px);
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+        }
+
+        .key-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            border-top: 2px solid #fca5a5;
+            border-left: 2px solid #fca5a5;
+            border-bottom: 4px solid #991b1b;
+            border-right: 4px solid #991b1b;
+            color: #ffffff;
+            font-weight: 700;
+            transition: all 0.05s ease;
+        }
+        .key-danger:active {
+            border-bottom: 1px solid #991b1b;
+            border-right: 1px solid #991b1b;
+            transform: translateY(3px);
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        }
+
+        /* Custom Scrollbar for Tape */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.3);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(74,222,128,0.4);
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-between p-2 sm:p-4 select-none">
+
+    <!-- Top Brand & Options Bar -->
+    <header class="w-full max-w-md flex justify-between items-center mb-1 px-1">
+        <div class="flex items-center space-x-2">
+            <div class="w-2.5 h-2.5 rounded-full bg-red-600 shadow-inner"></div>
+            <span class="font-lcd tracking-widest text-xs text-amber-500 font-bold">POCKET-15C SCIENTIFIC</span>
+        </div>
+        <div class="flex items-center space-x-1.5 text-xs font-mono">
+            <button id="themeToggle" class="px-2 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-amber-400 border border-zinc-700 rounded shadow">
+                Cor: <span id="themeName">Âmbar</span>
+            </button>
+            <button id="scanlineToggle" class="px-2 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-emerald-400 border border-zinc-700 rounded shadow">
+                Linhas: <span id="scanlineStatus">ON</span>
+            </button>
+            <button id="soundToggle" class="px-2 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 border border-zinc-700 rounded shadow">
+                Som: <span id="soundStatus">OFF</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Retro Calculator Chassis -->
+    <main class="w-full max-w-md calculator-body rounded-2xl p-3 sm:p-4 flex flex-col gap-3 shadow-2xl">
+        
+        <!-- Vintage Badge -->
+        <div class="flex justify-between items-center text-[10px] text-zinc-400 px-1 font-mono tracking-widest uppercase border-b border-zinc-800 pb-1">
+            <span>Microprocessor 8-Bit Arithmetic Unit</span>
+            <span class="text-zinc-500">SN: 1984-REV2</span>
+        </div>
+
+        <!-- LCD Screen Display -->
+        <div id="lcdDisplay" class="lcd-screen scanlines amber rounded-lg p-3 flex flex-col justify-between h-36 sm:h-40 transition-colors duration-300">
+            <!-- Status Indicators Row -->
+            <div class="flex justify-between items-center text-xs opacity-90 font-mono tracking-wider">
+                <span id="angleModeDisp" class="bg-black/40 px-1.5 py-0.5 rounded border border-current/20">DEG</span>
+                <span id="memIndicator" class="opacity-50">MEM: 0</span>
+                <span class="opacity-75">BAT: 9V OK</span>
+            </div>
+            
+            <!-- Expression & Main Numerical Output -->
+            <div class="flex flex-col items-end justify-end my-auto">
+                <div id="historyExpression" class="font-mono text-sm sm:text-base opacity-75 h-5 overflow-hidden w-full text-right tracking-wider"></div>
+                <div id="mainOutput" class="font-lcd text-3xl sm:text-4xl tracking-widest overflow-x-auto w-full text-right py-1">0</div>
+            </div>
+        </div>
+
+        <!-- Mode Buttons & History Tape Drawer Toggle -->
+        <div class="grid grid-cols-4 gap-1.5 text-xs font-mono">
+            <button onclick="setAngleMode('DEG')" id="btnDeg" class="py-1 bg-zinc-800 text-amber-400 font-bold border border-zinc-700 rounded transition shadow">DEG</button>
+            <button onclick="setAngleMode('RAD')" id="btnRad" class="py-1 bg-zinc-800 text-zinc-400 border border-zinc-700 rounded transition shadow">RAD</button>
+            <button onclick="toggleHistoryTape()" class="py-1 bg-zinc-800 text-zinc-200 border border-zinc-700 rounded col-span-2 flex items-center justify-center gap-1 hover:bg-zinc-700 shadow">
+                <span>📜 Fita de Histórico</span>
+            </button>
+        </div>
+
+        <!-- Collapsible History Tape Panel -->
+        <div id="historyTapeContainer" class="hidden bg-black/80 border border-zinc-700 rounded-lg p-2 max-h-32 overflow-y-auto text-xs font-mono shadow-inner">
+            <div class="flex justify-between text-zinc-400 border-b border-zinc-800 pb-1 mb-1">
+                <span>Registro de Operações</span>
+                <button onclick="clearHistory()" class="text-red-400 hover:text-red-300">Limpar</button>
+            </div>
+            <div id="historyTapeList" class="flex flex-col gap-1 text-zinc-300">
+                <div class="text-zinc-600 italic">Nenhum cálculo na fita...</div>
+            </div>
+        </div>
+
+        <!-- Scientific Keypad Grid (5 Columns x 8 Rows) -->
+        <div class="grid grid-cols-5 gap-1.5 sm:gap-2 pt-1">
+            <!-- Row 1: Trig functions & Memory clear -->
+            <button onclick="appendFunction('sin')" class="key-func py-2.5 rounded text-xs sm:text-sm">sin</button>
+            <button onclick="appendFunction('cos')" class="key-func py-2.5 rounded text-xs sm:text-sm">cos</button>
+            <button onclick="appendFunction('tan')" class="key-func py-2.5 rounded text-xs sm:text-sm">tan</button>
+            <button onclick="memoryOp('MC')" class="key-func py-2.5 rounded text-xs text-red-300 font-bold">MC</button>
+            <button onclick="memoryOp('M+')" class="key-func py-2.5 rounded text-xs font-bold">M+</button>
+
+            <!-- Row 2: Inverse Trig & Memory recall/store -->
+            <button onclick="appendFunction('asin')" class="key-func py-2.5 rounded text-[11px] sm:text-xs">sin⁻¹</button>
+            <button onclick="appendFunction('acos')" class="key-func py-2.5 rounded text-[11px] sm:text-xs">cos⁻¹</button>
+            <button onclick="appendFunction('atan')" class="key-func py-2.5 rounded text-[11px] sm:text-xs">tan⁻¹</button>
+            <button onclick="memoryOp('MR')" class="key-func py-2.5 rounded text-xs font-bold">MR</button>
+            <button onclick="memoryOp('MS')" class="key-func py-2.5 rounded text-xs font-bold">MS</button>
+
+            <!-- Row 3: Logarithms, Exponentiation & Constants -->
+            <button onclick="appendFunction('log')" class="key-func py-2.5 rounded text-xs sm:text-sm">log</button>
+            <button onclick="appendFunction('ln')" class="key-func py-2.5 rounded text-xs sm:text-sm">ln</button>
+            <button onclick="appendOperator('^')" class="key-func py-2.5 rounded text-xs sm:text-sm font-bold">xʸ</button>
+            <button onclick="appendConstant('Math.PI')" class="key-func py-2.5 rounded text-xs sm:text-sm font-bold">π</button>
+            <button onclick="appendConstant('Math.E')" class="key-func py-2.5 rounded text-xs sm:text-sm font-bold">e</button>
+
+            <!-- Row 4: Roots, Factorial & Brackets -->
+            <button onclick="appendFunction('sqrt')" class="key-func py-2.5 rounded text-xs sm:text-sm font-bold">√</button>
+            <button onclick="appendFunction('fact')" class="key-func py-2.5 rounded text-xs sm:text-sm font-bold">n!</button>
+            <button onclick="appendValue('(')" class="key-func py-2.5 rounded text-sm font-bold">(</button>
+            <button onclick="appendValue(')')" class="key-func py-2.5 rounded text-sm font-bold">)</button>
+            <button onclick="backspace()" class="key-danger py-2.5 rounded text-xs sm:text-sm font-bold flex items-center justify-center">⌫</button>
+
+            <!-- Row 5: Clear All & Digits 7, 8, 9, Division -->
+            <button onclick="clearAll()" class="key-danger py-3 rounded text-sm font-bold">AC</button>
+            <button onclick="appendValue('7')" class="key-num py-3 rounded text-base sm:text-lg">7</button>
+            <button onclick="appendValue('8')" class="key-num py-3 rounded text-base sm:text-lg">8</button>
+            <button onclick="appendValue('9')" class="key-num py-3 rounded text-base sm:text-lg">9</button>
+            <button onclick="appendOperator('/')" class="key-op py-3 rounded text-base sm:text-lg">÷</button>
+
+            <!-- Row 6: Percentage & Digits 4, 5, 6, Multiplication -->
+            <button onclick="appendValue('%')" class="key-func py-3 rounded text-sm font-bold">%</button>
+            <button onclick="appendValue('4')" class="key-num py-3 rounded text-base sm:text-lg">4</button>
+            <button onclick="appendValue('5')" class="key-num py-3 rounded text-base sm:text-lg">5</button>
+            <button onclick="appendValue('6')" class="key-num py-3 rounded text-base sm:text-lg">6</button>
+            <button onclick="appendOperator('*')" class="key-op py-3 rounded text-base sm:text-lg">×</button>
+
+            <!-- Row 7: Inverse (1/x) & Digits 1, 2, 3, Subtraction -->
+            <button onclick="appendValue('1/')" class="key-func py-3 rounded text-xs sm:text-sm font-bold">1/x</button>
+            <button onclick="appendValue('1')" class="key-num py-3 rounded text-base sm:text-lg">1</button>
+            <button onclick="appendValue('2')" class="key-num py-3 rounded text-base sm:text-lg">2</button>
+            <button onclick="appendValue('3')" class="key-num py-3 rounded text-base sm:text-lg">3</button>
+            <button onclick="appendOperator('-')" class="key-op py-3 rounded text-base sm:text-lg">-</button>
+
+            <!-- Row 8: Sign toggle, 0, Decimal point, Equals, Addition -->
+            <button onclick="toggleSign()" class="key-func py-3 rounded text-sm font-bold">±</button>
+            <button onclick="appendValue('0')" class="key-num py-3 rounded text-base sm:text-lg">0</button>
+            <button onclick="appendValue('.')" class="key-num py-3 rounded text-base sm:text-lg">.</button>
+            <button onclick="calculateResult()" class="key-op py-3 rounded text-base sm:text-lg bg-gradient-to-br from-emerald-600 to-green-800 border-emerald-500 border-b-emerald-950">=</button>
+            <button onclick="appendOperator('+')" class="key-op py-3 rounded text-base sm:text-lg">+</button>
+        </div>
+
+    </main>
+
+    <footer class="mt-2 text-center text-xs text-zinc-500 font-mono">
+        Calculadora Científica Portátil &bull; 1980s Retro Edition
+    </footer>
+
+    <script>
+        let currentInput = "0";
+        let expressionHistory = "";
+        let angleMode = "DEG"; // DEG or RAD
+        let memoryValue = 0;
+        let soundEnabled = false;
+        let currentTheme = "amber"; // amber or green
+        let scanlinesEnabled = true;
+        let historyTape = [];
+
+        // Synthesizer setup for mechanical click sounds
+        let synth = null;
+        function initSound() {
+            if (!synth) {
+                synth = new Tone.Synth({
+                    oscillator: { type: "triangle" },
+                    envelope: { attack: 0.003, decay: 0.03, sustain: 0, release: 0.03 }
+                }).toDestination();
+                synth.volume.value = -12;
+            }
+        }
+
+        function playClickSound() {
+            if (soundEnabled) {
+                initSound();
+                try {
+                    Tone.start();
+                    synth.triggerAttackRelease("G4", "32n");
+                } catch(e) {
+                    console.log("Audio waiting for user gesture", e);
+                }
+            }
+        }
+
+        // Sound Toggle
+        document.getElementById('soundToggle').addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundStatus').innerText = soundEnabled ? "ON" : "OFF";
+            document.getElementById('soundStatus').className = soundEnabled ? "text-emerald-400 font-bold" : "text-zinc-400";
+            if (soundEnabled) initSound();
+            playClickSound();
+        });
+
+        // Scanlines Toggle
+        document.getElementById('scanlineToggle').addEventListener('click', () => {
+            playClickSound();
+            scanlinesEnabled = !scanlinesEnabled;
+            const lcd = document.getElementById('lcdDisplay');
+            const statusSpan = document.getElementById('scanlineStatus');
+            if (scanlinesEnabled) {
+                lcd.classList.add('scanlines');
+                statusSpan.innerText = "ON";
+                statusSpan.className = "text-emerald-400 font-bold";
+            } else {
+                lcd.classList.remove('scanlines');
+                statusSpan.innerText = "OFF";
+                statusSpan.className = "text-zinc-400";
+            }
+        });
+
+        // Theme Toggle (Amber vs Green LCD Phosphor)
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            playClickSound();
+            const lcd = document.getElementById('lcdDisplay');
+            const themeNameSpan = document.getElementById('themeName');
+            if (currentTheme === "amber") {
+                currentTheme = "green";
+                lcd.classList.remove('amber');
+                themeNameSpan.innerText = "Verde";
+                themeNameSpan.className = "text-emerald-400 font-bold";
+            } else {
+                currentTheme = "amber";
+                lcd.classList.add('amber');
+                themeNameSpan.innerText = "Âmbar";
+                themeNameSpan.className = "text-amber-400 font-bold";
+            }
+        });
+
+        function setAngleMode(mode) {
+            playClickSound();
+            angleMode = mode;
+            document.getElementById('angleModeDisp').innerText = mode;
+            if (mode === 'DEG') {
+                document.getElementById('btnDeg').className = "py-1 bg-zinc-800 text-amber-400 font-bold border border-zinc-700 rounded transition shadow";
+                document.getElementById('btnRad').className = "py-1 bg-zinc-800 text-zinc-400 border border-zinc-700 rounded transition shadow";
+            } else {
+                document.getElementById('btnRad').className = "py-1 bg-zinc-800 text-amber-400 font-bold border border-zinc-700 rounded transition shadow";
+                document.getElementById('btnDeg').className = "py-1 bg-zinc-800 text-zinc-400 border border-zinc-700 rounded transition shadow";
+            }
+        }
+
+        function updateDisplay() {
+            document.getElementById('mainOutput').innerText = currentInput;
+            document.getElementById('historyExpression').innerText = expressionHistory;
+            document.getElementById('memIndicator').innerText = `MEM: ${memoryValue !== 0 ? '1' : '0'}`;
+        }
+
+        function appendValue(val) {
+            playClickSound();
+            if (currentInput === "0" && val !== "." && !isOperator(val)) {
+                currentInput = val;
+            } else {
+                currentInput += val;
+            }
+            updateDisplay();
+        }
+
+        function appendOperator(op) {
+            playClickSound();
+            currentInput += " " + op + " ";
+            updateDisplay();
+        }
+
+        function appendConstant(constantStr) {
+            playClickSound();
+            if (currentInput === "0") {
+                currentInput = constantStr;
+            } else {
+                currentInput += constantStr;
+            }
+            updateDisplay();
+        }
+
+        function appendFunction(funcName) {
+            playClickSound();
+            if (currentInput === "0") {
+                currentInput = funcName + "(";
+            } else {
+                currentInput += funcName + "(";
+            }
+            updateDisplay();
+        }
+
+        function clearAll() {
+            playClickSound();
+            currentInput = "0";
+            expressionHistory = "";
+            updateDisplay();
+        }
+
+        function backspace() {
+            playClickSound();
+            if (currentInput.length > 1) {
+                currentInput = currentInput.trim();
+                currentInput = currentInput.substring(0, currentInput.length - 1);
+            } else {
+                currentInput = "0";
+            }
+            updateDisplay();
+        }
+
+        function toggleSign() {
+            playClickSound();
+            if (currentInput.startsWith("-")) {
+                currentInput = currentInput.substring(1);
+            } else if (currentInput !== "0") {
+                currentInput = "-" + currentInput;
+            }
+            updateDisplay();
+        }
+
+        function factorial(n) {
+            if (n < 0 || !Number.isInteger(n)) return NaN;
+            if (n === 0 || n === 1) return 1;
+            let res = 1;
+            for (let i = 2; i <= n; i++) res *= i;
+            return res;
+        }
+
+        // Parser & Calculation Engine
+        function calculateResult() {
+            playClickSound();
+            expressionHistory = currentInput;
+            try {
+                let evalStr = currentInput;
+
+                // Trig angle handling
+                evalStr = evalStr.replace(/sin\(/g, angleMode === 'DEG' ? 'Math.sin((Math.PI/180)*' : 'Math.sin(');
+                evalStr = evalStr.replace(/cos\(/g, angleMode === 'DEG' ? 'Math.cos((Math.PI/180)*' : 'Math.cos(');
+                evalStr = evalStr.replace(/tan\(/g, angleMode === 'DEG' ? 'Math.tan((Math.PI/180)*' : 'Math.tan(');
+
+                // Inverse trig handling
+                evalStr = evalStr.replace(/asin\(/g, angleMode === 'DEG' ? '(180/Math.PI)*Math.asin(' : 'Math.asin(');
+                evalStr = evalStr.replace(/acos\(/g, angleMode === 'DEG' ? '(180/Math.PI)*Math.acos(' : 'Math.acos(');
+                evalStr = evalStr.replace(/atan\(/g, angleMode === 'DEG' ? '(180/Math.PI)*Math.atan(' : 'Math.atan(');
+
+                // Logs, roots, factorial & powers
+                evalStr = evalStr.replace(/log\(/g, 'Math.log10(');
+                evalStr = evalStr.replace(/ln\(/g, 'Math.log(');
+                evalStr = evalStr.replace(/sqrt\(/g, 'Math.sqrt(');
+                evalStr = evalStr.replace(/fact\(/g, 'factorial(');
+                evalStr = evalStr.replace(/\^/g, '**');
+                evalStr = evalStr.replace(/([0-9.]+)%/g, '($1/100)');
+
+                let result = eval(evalStr);
+
+                if (isNaN(result) || !isFinite(result)) {
+                    currentInput = "ERR: SINTAXE";
+                } else {
+                    result = Math.round(result * 1e10) / 1e10;
+                    currentInput = result.toString();
+                    addToTape(expressionHistory, currentInput);
+                }
+            } catch (error) {
+                currentInput = "ERR: ERRO";
+            }
+            updateDisplay();
+        }
+
+        function isOperator(char) {
+            return ['+', '-', '*', '/', '^'].includes(char);
+        }
+
+        // Memory Operations
+        function memoryOp(op) {
+            playClickSound();
+            let val = parseFloat(currentInput) || 0;
+            switch(op) {
+                case 'MC':
+                    memoryValue = 0;
+                    break;
+                case 'M+':
+                    memoryValue += val;
+                    break;
+                case 'MR':
+                    currentInput = memoryValue.toString();
+                    break;
+                case 'MS':
+                    memoryValue = val;
+                    break;
+            }
+            updateDisplay();
+        }
+
+        // History Tape Drawer Controls
+        function toggleHistoryTape() {
+            playClickSound();
+            const tape = document.getElementById('historyTapeContainer');
+            tape.classList.toggle('hidden');
+        }
+
+        function addToTape(expr, res) {
+            historyTape.unshift({ expr, res });
+            if (historyTape.length > 20) historyTape.pop();
+            renderTape();
+        }
+
+        function renderTape() {
+            const list = document.getElementById('historyTapeList');
+            if (historyTape.length === 0) {
+                list.innerHTML = '<div class="text-zinc-600 italic">Nenhum cálculo na fita...</div>';
+                return;
+            }
+            list.innerHTML = historyTape.map(item => `
+                <div class="flex justify-between border-b border-zinc-800/60 py-0.5">
+                    <span class="opacity-75">${item.expr}</span>
+                    <span class="font-bold text-amber-400">= ${item.res}</span>
+                </div>
+            `).join('');
+        }
+
+        function clearHistory() {
+            playClickSound();
+            historyTape = [];
+            renderTape();
+        }
+
+        // Physical Keyboard Support
+        window.addEventListener('keydown', (e) => {
+            const key = e.key;
+            if ((key >= '0' && key <= '9') || key === '.') {
+                appendValue(key);
+            } else if (key === '+' || key === '-' || key === '*' || key === '/' || key === '^') {
+                appendOperator(key);
+            } else if (key === 'Enter' || key === '=') {
+                e.preventDefault();
+                calculateResult();
+            } else if (key === 'Backspace') {
+                e.preventDefault();
+                backspace();
+            } else if (key.toLowerCase() === 'c') {
+                clearAll();
+            } else if (key === '(' || key === ')') {
+                appendValue(key);
+            }
+        });
+    </script>
+</body>
+</html>
+```
+eof
+```
